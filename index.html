@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earth Explorer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #fff;
+            cursor: grab;
+        }
+
+        body:active { cursor: grabbing; }
+
+        #globe-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+        }
+
+        /* ── Header ── */
+        .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 28px 36px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .header-left h1 {
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .header-right p {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.7;
+        }
+
+        .header-right p.highlight {
+            color: rgba(255,255,255,0.85);
+            font-weight: 500;
+        }
+
+        .header-right a {
+            color: #6ec1e4;
+            text-decoration: none;
+            font-size: 13px;
+            pointer-events: all;
+        }
+
+        /* ── Footer Nav ── */
+        .footer-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 36px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .footer-nav span {
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 0.5px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-links a {
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            text-decoration: none;
+            pointer-events: all;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover { color: #fff; }
+
+        /* ── Click Marker ── */
+        .click-marker {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .click-marker.active { opacity: 1; }
+
+        .click-marker::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 6px; height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .click-marker-ring {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            animation: none;
+        }
+
+        .click-marker-ring.active {
+            opacity: 1;
+            animation: pulse-ring 2s ease-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+
+        /* ── Info Panel ── */
+        .info-panel {
+            position: fixed;
+            top: 50%;
+            right: -480px;
+            transform: translateY(-50%);
+            width: 420px;
+            max-height: 80vh;
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            z-index: 200;
+            transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .info-panel::-webkit-scrollbar { display: none; }
+        .info-panel.open { right: 36px; }
+
+        .panel-close {
+            position: absolute;
+            top: 16px; right: 16px;
+            width: 32px; height: 32px;
+            border: none;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+            z-index: 10;
+        }
+
+        .panel-close:hover { background: rgba(255,255,255,0.15); }
+
+        .panel-header {
+            padding: 32px 28px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .panel-flag {
+            font-size: 48px;
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+
+        .panel-country {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 4px;
+        }
+
+        .panel-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 400;
+        }
+
+        .panel-coords {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 20px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        .panel-body { padding: 20px 28px 28px; }
+
+        .info-section {
+            margin-bottom: 20px;
+        }
+
+        .info-section:last-child { margin-bottom: 0; }
+
+        .info-section-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 12px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px 14px;
+            transition: background 0.3s;
+        }
+
+        .info-card:hover { background: rgba(255,255,255,0.07); }
+
+        .info-card.full-width { grid-column: 1 / -1; }
+
+        .info-card-icon {
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .info-card-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 3px;
+        }
+
+        .info-card-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.9);
+            line-height: 1.4;
+        }
+
+        /* ── Prompt Tooltip ── */
+        .prompt-tooltip {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 30px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            z-index: 100;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .prompt-tooltip span { color: rgba(255,255,255,0.8); }
+
+        /* ── Search ── */
+        .search-container {
+            position: fixed;
+            top: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 150;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 30px;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus-within {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .search-box svg {
+            width: 14px; height: 14px;
+            color: rgba(255,255,255,0.4);
+            flex-shrink: 0;
+        }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            width: 200px;
+        }
+
+        .search-box input::placeholder { color: rgba(255,255,255,0.3); }
+
+        .search-results {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0; right: 0;
+            background: rgba(20,20,30,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            max-height: 260px;
+            overflow-y: auto;
+            display: none;
+            scrollbar-width: none;
+        }
+
+        .search-results::-webkit-scrollbar { display: none; }
+        .search-results.visible { display: block; }
+
+        .search-result-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            color: rgba(255,255,255,0.7);
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-result-item:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+
+        .search-result-item .sr-flag { font-size: 18px; }
+        .search-result-item .sr-name { flex: 1; }
+
+        /* ── Loading ── */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0f;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 20px;
+            letter-spacing: 2px;
+        }
+
+        .loading-spinner {
+            width: 40px; height: 40px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 600px) {
+            .info-panel {
+                width: calc(100vw - 24px);
+                right: -110vw;
+                max-height: 70vh;
+                top: auto;
+                bottom: 12px;
+                transform: none;
+            }
+            .info-panel.open { right: 12px; }
+            .header { padding: 16px 20px; }
+            .header-right { display: none; }
+            .search-container { top: 16px; }
+            .info-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">LOADING EARTH</div>
+</div>
+
+<div id="globe-container"></div>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-left">
+        <h1>Earth Explorer<br>Made with ❤ by Hridesh Thakur</h1>
+    </div>
+    <div class="header-right">
+        <p class="highlight">Interactive Globe</p>
+        <p>3D · WebGL · Data</p>
+        <a href="#">Explore the world</a>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="search-container">
+    <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search a country…" autocomplete="off"/>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+</div>
+
+<!-- Footer -->
+<!-- <div class="footer-nav">
+    <span>Selected Works</span>
+    <div class="footer-links">
+        <a href="#">Rotate</a>
+        <a href="#">Zoom</a>
+        <a href="#">Click to explore</a>
+    </div>
+</div> -->
+
+<!-- Click markers -->
+<div class="click-marker" id="clickMarker"></div>
+<div class="click-marker-ring" id="clickMarkerRing"></div>
+
+<!-- Prompt -->
+<div class="prompt-tooltip" id="promptTooltip">
+    Click anywhere on the globe to <span>explore a country</span>
+</div>
+
+<!-- Info Panel -->
+<div class="info-panel" id="infoPanel">
+    <button class="panel-close" id="panelClose">✕</button>
+    <div class="panel-header">
+        <div class="panel-flag" id="panelFlag"></div>
+        <div class="panel-country" id="panelCountry"></div>
+        <div class="panel-subtitle" id="panelSubtitle"></div>
+        <div class="panel-coords" id="panelCoords"></div>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ═══════════════════════════════════════════
+   COUNTRY DATABASE
+   ═══════════════════════════════════════════ */
+const countries = [
+    { name:"United States", code:"US", flag:"🇺🇸", lat:39.8, lng:-98.5, capital:"Washington, D.C.", continent:"North America", population:"331M", language:"English", currency:"US Dollar ($)", animal:"Bald Eagle", food:"Hamburger", flower:"Rose", sport:"American Football", motto:"In God We Trust", landmark:"Statue of Liberty", tree:"Oak" },
+    { name:"Canada", code:"CA", flag:"🇨🇦", lat:56.1, lng:-106.3, capital:"Ottawa", continent:"North America", population:"38M", language:"English, French", currency:"Canadian Dollar (C$)", animal:"Beaver", food:"Poutine", flower:"Sugar Maple Blossom", sport:"Ice Hockey", motto:"A Mari Usque Ad Mare", landmark:"CN Tower", tree:"Maple" },
+    { name:"Mexico", code:"MX", flag:"🇲🇽", lat:23.6, lng:-102.5, capital:"Mexico City", continent:"North America", population:"128M", language:"Spanish", currency:"Mexican Peso (MXN)", animal:"Golden Eagle", food:"Tacos", flower:"Dahlia", sport:"Football (Soccer)", motto:"Homeland, Liberty", landmark:"Chichén Itzá", tree:"Montezuma Cypress" },
+    { name:"Brazil", code:"BR", flag:"🇧🇷", lat:-14.2, lng:-51.9, capital:"Brasília", continent:"South America", population:"212M", language:"Portuguese", currency:"Brazilian Real (R$)", animal:"Jaguar", food:"Feijoada", flower:"Cattleya Orchid", sport:"Football (Soccer)", motto:"Order and Progress", landmark:"Christ the Redeemer", tree:"Pau-Brasil" },
+    { name:"Argentina", code:"AR", flag:"🇦🇷", lat:-38.4, lng:-63.6, capital:"Buenos Aires", continent:"South America", population:"45M", language:"Spanish", currency:"Argentine Peso (ARS)", animal:"Rufous Hornero", food:"Asado", flower:"Ceibo", sport:"Football (Soccer)", motto:"In Union and Freedom", landmark:"Iguazu Falls", tree:"Ceibo" },
+    { name:"Colombia", code:"CO", flag:"🇨🇴", lat:4.5, lng:-74.3, capital:"Bogotá", continent:"South America", population:"51M", language:"Spanish", currency:"Colombian Peso (COP)", animal:"Andean Condor", food:"Bandeja Paisa", flower:"Cattleya Orchid", sport:"Football (Soccer)", motto:"Freedom and Order", landmark:"Cartagena Old City", tree:"Wax Palm" },
+    { name:"Peru", code:"PE", flag:"🇵🇪", lat:-9.2, lng:-75.0, capital:"Lima", continent:"South America", population:"33M", language:"Spanish", currency:"Peruvian Sol (PEN)", animal:"Vicuña", food:"Ceviche", flower:"Cantua", sport:"Football (Soccer)", motto:"Firm and Happy for the Union", landmark:"Machu Picchu", tree:"Cinchona" },
+    { name:"Chile", code:"CL", flag:"🇨🇱", lat:-35.7, lng:-71.5, capital:"Santiago", continent:"South America", population:"19M", language:"Spanish", currency:"Chilean Peso (CLP)", animal:"Andean Condor", food:"Empanada", flower:"Copihue", sport:"Football (Soccer)", motto:"By Right or Might", landmark:"Easter Island Moai", tree:"Araucaria" },
+    { name:"United Kingdom", code:"GB", flag:"🇬🇧", lat:55.4, lng:-3.4, capital:"London", continent:"Europe", population:"67M", language:"English", currency:"Pound Sterling (£)", animal:"Lion", food:"Fish and Chips", flower:"Tudor Rose", sport:"Football (Soccer)", motto:"God and My Right", landmark:"Big Ben", tree:"Royal Oak" },
+    { name:"France", code:"FR", flag:"🇫🇷", lat:46.2, lng:2.2, capital:"Paris", continent:"Europe", population:"67M", language:"French", currency:"Euro (€)", animal:"Gallic Rooster", food:"Croissant", flower:"Iris (Fleur-de-lis)", sport:"Football (Soccer)", motto:"Liberty, Equality, Fraternity", landmark:"Eiffel Tower", tree:"Yew" },
+    { name:"Germany", code:"DE", flag:"🇩🇪", lat:51.2, lng:10.4, capital:"Berlin", continent:"Europe", population:"83M", language:"German", currency:"Euro (€)", animal:"Federal Eagle", food:"Bratwurst", flower:"Cornflower", sport:"Football (Soccer)", motto:"Unity and Justice and Freedom", landmark:"Brandenburg Gate", tree:"Oak" },
+    { name:"Italy", code:"IT", flag:"🇮🇹", lat:41.9, lng:12.6, capital:"Rome", continent:"Europe", population:"60M", language:"Italian", currency:"Euro (€)", animal:"Italian Wolf", food:"Pizza", flower:"Lily", sport:"Football (Soccer)", motto:"Star of Italy", landmark:"Colosseum", tree:"Strawberry Tree" },
+    { name:"Spain", code:"ES", flag:"🇪🇸", lat:40.5, lng:-3.7, capital:"Madrid", continent:"Europe", population:"47M", language:"Spanish", currency:"Euro (€)", animal:"Bull", food:"Paella", flower:"Red Carnation", sport:"Football (Soccer)", motto:"Plus Ultra", landmark:"Sagrada Familia", tree:"Holm Oak" },
+    { name:"Portugal", code:"PT", flag:"🇵🇹", lat:39.4, lng:-8.2, capital:"Lisbon", continent:"Europe", population:"10M", language:"Portuguese", currency:"Euro (€)", animal:"Iberian Wolf", food:"Pastel de Nata", flower:"Lavender", sport:"Football (Soccer)", motto:"This Is My Beloved Country", landmark:"Belém Tower", tree:"Cork Oak" },
+    { name:"Netherlands", code:"NL", flag:"🇳🇱", lat:52.1, lng:5.3, capital:"Amsterdam", continent:"Europe", population:"17M", language:"Dutch", currency:"Euro (€)", animal:"Lion", food:"Stroopwafel", flower:"Tulip", sport:"Football (Soccer)", motto:"I Will Maintain", landmark:"Windmills of Kinderdijk", tree:"Linden" },
+    { name:"Belgium", code:"BE", flag:"🇧🇪", lat:50.5, lng:4.5, capital:"Brussels", continent:"Europe", population:"11.5M", language:"Dutch, French, German", currency:"Euro (€)", animal:"Lion", food:"Waffle", flower:"Red Poppy", sport:"Football (Soccer)", motto:"Unity Makes Strength", landmark:"Grand Place", tree:"Beech" },
+    { name:"Switzerland", code:"CH", flag:"🇨🇭", lat:46.8, lng:8.2, capital:"Bern", continent:"Europe", population:"8.6M", language:"German, French, Italian, Romansh", currency:"Swiss Franc (CHF)", animal:"Cow", food:"Fondue", flower:"Edelweiss", sport:"Skiing", motto:"One for All, All for One", landmark:"Matterhorn", tree:"Swiss Pine" },
+    { name:"Austria", code:"AT", flag:"🇦🇹", lat:47.5, lng:14.6, capital:"Vienna", continent:"Europe", population:"9M", language:"German", currency:"Euro (€)", animal:"Golden Eagle", food:"Wiener Schnitzel", flower:"Edelweiss", sport:"Skiing", motto:"It is Austria's Destiny to Rule the World", landmark:"Schönbrunn Palace", tree:"Spruce" },
+    { name:"Sweden", code:"SE", flag:"🇸🇪", lat:60.1, lng:18.6, capital:"Stockholm", continent:"Europe", population:"10M", language:"Swedish", currency:"Swedish Krona (SEK)", animal:"Eurasian Elk", food:"Swedish Meatballs", flower:"Linnaea", sport:"Ice Hockey", motto:"For Sweden – With the Times", landmark:"Vasa Museum", tree:"Silver Birch" },
+    { name:"Norway", code:"NO", flag:"🇳🇴", lat:60.5, lng:8.5, capital:"Oslo", continent:"Europe", population:"5.4M", language:"Norwegian", currency:"Norwegian Krone (NOK)", animal:"Lion", food:"Lutefisk", flower:"Purple Heather", sport:"Cross-country Skiing", motto:"Everything for Norway", landmark:"Fjords", tree:"Norway Spruce" },
+    { name:"Denmark", code:"DK", flag:"🇩🇰", lat:56.3, lng:9.5, capital:"Copenhagen", continent:"Europe", population:"5.8M", language:"Danish", currency:"Danish Krone (DKK)", animal:"Mute Swan", food:"Smørrebrød", flower:"Red Clover", sport:"Football (Soccer)", motto:"God's Help, the Love of the People, Denmark's Strength", landmark:"Little Mermaid Statue", tree:"Beech" },
+    { name:"Finland", code:"FI", flag:"🇫🇮", lat:61.9, lng:25.7, capital:"Helsinki", continent:"Europe", population:"5.5M", language:"Finnish, Swedish", currency:"Euro (€)", animal:"Brown Bear", food:"Karjalanpiirakka", flower:"Lily of the Valley", sport:"Ice Hockey", motto:"(No official motto)", landmark:"Northern Lights", tree:"Silver Birch" },
+    { name:"Poland", code:"PL", flag:"🇵🇱", lat:51.9, lng:19.1, capital:"Warsaw", continent:"Europe", population:"38M", language:"Polish", currency:"Polish Złoty (PLN)", animal:"White-tailed Eagle", food:"Pierogi", flower:"Red Poppy", sport:"Football (Soccer)", motto:"God, Honour, Fatherland", landmark:"Wawel Castle", tree:"Oak" },
+    { name:"Greece", code:"GR", flag:"🇬🇷", lat:39.1, lng:21.8, capital:"Athens", continent:"Europe", population:"10.4M", language:"Greek", currency:"Euro (€)", animal:"Dolphin", food:"Moussaka", flower:"Violet", sport:"Football (Soccer)", motto:"Freedom or Death", landmark:"Parthenon", tree:"Olive" },
+    { name:"Turkey", code:"TR", flag:"🇹🇷", lat:38.9, lng:35.2, capital:"Ankara", continent:"Europe/Asia", population:"84M", language:"Turkish", currency:"Turkish Lira (₺)", animal:"Grey Wolf", food:"Kebab", flower:"Tulip", sport:"Football (Soccer)", motto:"Sovereignty Belongs to the Nation", landmark:"Hagia Sophia", tree:"Turkish Pine" },
+    { name:"Russia", code:"RU", flag:"🇷🇺", lat:61.5, lng:105.3, capital:"Moscow", continent:"Europe/Asia", population:"146M", language:"Russian", currency:"Russian Ruble (₽)", animal:"Eurasian Brown Bear", food:"Borscht", flower:"Chamomile", sport:"Ice Hockey", motto:"(No official motto)", landmark:"Kremlin", tree:"Birch" },
+    { name:"China", code:"CN", flag:"🇨🇳", lat:35.9, lng:104.2, capital:"Beijing", continent:"Asia", population:"1.41B", language:"Mandarin Chinese", currency:"Renminbi Yuan (¥)", animal:"Giant Panda", food:"Peking Duck", flower:"Peony", sport:"Table Tennis", motto:"Serve the People", landmark:"Great Wall of China", tree:"Ginkgo" },
+    { name:"Japan", code:"JP", flag:"🇯🇵", lat:36.2, lng:138.3, capital:"Tokyo", continent:"Asia", population:"126M", language:"Japanese", currency:"Japanese Yen (¥)", animal:"Green Pheasant", food:"Sushi", flower:"Cherry Blossom", sport:"Sumo", motto:"(No official motto)", landmark:"Mount Fuji", tree:"Cherry (Sakura)" },
+    { name:"South Korea", code:"KR", flag:"🇰🇷", lat:35.9, lng:127.8, capital:"Seoul", continent:"Asia", population:"52M", language:"Korean", currency:"South Korean Won (₩)", animal:"Siberian Tiger", food:"Kimchi", flower:"Hibiscus", sport:"Taekwondo", motto:"Benefit Broadly the Human World", landmark:"Gyeongbokgung Palace", tree:"Pine" },
+    { name:"India", code:"IN", flag:"🇮🇳", lat:20.6, lng:79.0, capital:"New Delhi", continent:"Asia", population:"1.38B", language:"Hindi, English", currency:"Indian Rupee (₹)", animal:"Bengal Tiger", food:"Biryani", flower:"Lotus", sport:"Cricket", motto:"Truth Alone Triumphs", landmark:"Taj Mahal", tree:"Banyan" },
+    { name:"Thailand", code:"TH", flag:"🇹🇭", lat:15.9, lng:100.9, capital:"Bangkok", continent:"Asia", population:"70M", language:"Thai", currency:"Thai Baht (฿)", animal:"Elephant", food:"Pad Thai", flower:"Golden Shower Tree", sport:"Muay Thai", motto:"Nation, Religion, King", landmark:"Grand Palace", tree:"Golden Shower" },
+    { name:"Vietnam", code:"VN", flag:"🇻🇳", lat:14.1, lng:108.3, capital:"Hanoi", continent:"Asia", population:"97M", language:"Vietnamese", currency:"Vietnamese Dong (₫)", animal:"Water Buffalo", food:"Phở", flower:"Lotus", sport:"Football (Soccer)", motto:"Independence, Freedom, Happiness", landmark:"Ha Long Bay", tree:"Bamboo" },
+    { name:"Indonesia", code:"ID", flag:"🇮🇩", lat:-0.8, lng:113.9, capital:"Jakarta", continent:"Asia", population:"274M", language:"Indonesian", currency:"Indonesian Rupiah (Rp)", animal:"Komodo Dragon", food:"Nasi Goreng", flower:"Moon Orchid", sport:"Badminton", motto:"Unity in Diversity", landmark:"Borobudur", tree:"Teak" },
+    { name:"Philippines", code:"PH", flag:"🇵🇭", lat:12.9, lng:121.8, capital:"Manila", continent:"Asia", population:"110M", language:"Filipino, English", currency:"Philippine Peso (₱)", animal:"Philippine Eagle", food:"Adobo", flower:"Sampaguita", sport:"Basketball", motto:"For God, People, Nature, and Country", landmark:"Chocolate Hills", tree:"Narra" },
+    { name:"Malaysia", code:"MY", flag:"🇲🇾", lat:4.2, lng:101.9, capital:"Kuala Lumpur", continent:"Asia", population:"32M", language:"Malay", currency:"Malaysian Ringgit (RM)", animal:"Malayan Tiger", food:"Nasi Lemak", flower:"Hibiscus", sport:"Badminton", motto:"Unity is Strength", landmark:"Petronas Towers", tree:"Hibiscus" },
+    { name:"Singapore", code:"SG", flag:"🇸🇬", lat:1.35, lng:103.8, capital:"Singapore", continent:"Asia", population:"5.7M", language:"English, Malay, Mandarin, Tamil", currency:"Singapore Dollar (S$)", animal:"Lion", food:"Chili Crab", flower:"Vanda Miss Joaquim", sport:"Football (Soccer)", motto:"Onward Singapore", landmark:"Marina Bay Sands", tree:"Tembusu" },
+    { name:"Saudi Arabia", code:"SA", flag:"🇸🇦", lat:23.9, lng:45.1, capital:"Riyadh", continent:"Asia", population:"35M", language:"Arabic", currency:"Saudi Riyal (SAR)", animal:"Arabian Horse", food:"Kabsa", flower:"Arabian Jasmine", sport:"Football (Soccer)", motto:"There is no god but God; Muhammad is the Messenger of God", landmark:"Kaaba", tree:"Date Palm" },
+    { name:"United Arab Emirates", code:"AE", flag:"🇦🇪", lat:23.4, lng:53.8, capital:"Abu Dhabi", continent:"Asia", population:"10M", language:"Arabic", currency:"UAE Dirham (AED)", animal:"Arabian Oryx", food:"Machboos", flower:"Tribulus", sport:"Camel Racing", motto:"God, Nation, President", landmark:"Burj Khalifa", tree:"Ghaf" },
+    { name:"Israel", code:"IL", flag:"🇮🇱", lat:31.0, lng:34.9, capital:"Jerusalem", continent:"Asia", population:"9.2M", language:"Hebrew, Arabic", currency:"Israeli New Shekel (₪)", animal:"Gazelle", food:"Falafel", flower:"Anemone", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Western Wall", tree:"Olive" },
+    { name:"Egypt", code:"EG", flag:"🇪🇬", lat:26.8, lng:30.8, capital:"Cairo", continent:"Africa", population:"102M", language:"Arabic", currency:"Egyptian Pound (E£)", animal:"Steppe Eagle", food:"Koshari", flower:"Lotus", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Pyramids of Giza", tree:"Date Palm" },
+    { name:"South Africa", code:"ZA", flag:"🇿🇦", lat:-30.6, lng:22.9, capital:"Pretoria", continent:"Africa", population:"60M", language:"11 Official Languages", currency:"South African Rand (R)", animal:"Springbok", food:"Bobotie", flower:"King Protea", sport:"Rugby", motto:"Diverse People Unite", landmark:"Table Mountain", tree:"Yellowwood" },
+    { name:"Nigeria", code:"NG", flag:"🇳🇬", lat:9.1, lng:8.7, capital:"Abuja", continent:"Africa", population:"206M", language:"English", currency:"Nigerian Naira (₦)", animal:"Eagle", food:"Jollof Rice", flower:"Costus Spectabilis", sport:"Football (Soccer)", motto:"Unity and Faith, Peace and Progress", landmark:"Zuma Rock", tree:"Iroko" },
+    { name:"Kenya", code:"KE", flag:"🇰🇪", lat:-0.02, lng:37.9, capital:"Nairobi", continent:"Africa", population:"54M", language:"Swahili, English", currency:"Kenyan Shilling (KES)", animal:"Lion", food:"Ugali", flower:"Orchid", sport:"Athletics", motto:"All Pull Together", landmark:"Mount Kenya", tree:"Muhugu" },
+    { name:"Ethiopia", code:"ET", flag:"🇪🇹", lat:9.1, lng:40.5, capital:"Addis Ababa", continent:"Africa", population:"115M", language:"Amharic", currency:"Ethiopian Birr (ETB)", animal:"Gelada Baboon", food:"Injera", flower:"Calla Lily", sport:"Athletics", motto:"(No official motto)", landmark:"Rock Churches of Lalibela", tree:"Wanza" },
+    { name:"Morocco", code:"MA", flag:"🇲🇦", lat:31.8, lng:-7.1, capital:"Rabat", continent:"Africa", population:"37M", language:"Arabic, Berber", currency:"Moroccan Dirham (MAD)", animal:"Barbary Lion", food:"Couscous", flower:"Rose", sport:"Football (Soccer)", motto:"God, Homeland, King", landmark:"Hassan II Mosque", tree:"Atlas Cedar" },
+    { name:"Ghana", code:"GH", flag:"🇬🇭", lat:7.9, lng:-1.0, capital:"Accra", continent:"Africa", population:"31M", language:"English", currency:"Ghanaian Cedi (GHS)", animal:"Tawny Eagle", food:"Fufu", flower:"Impala Lily", sport:"Football (Soccer)", motto:"Freedom and Justice", landmark:"Cape Coast Castle", tree:"Star Grass" },
+    { name:"Tanzania", code:"TZ", flag:"🇹🇿", lat:-6.4, lng:34.9, capital:"Dodoma", continent:"Africa", population:"60M", language:"Swahili, English", currency:"Tanzanian Shilling (TZS)", animal:"Giraffe", food:"Ugali", flower:"Clove", sport:"Football (Soccer)", motto:"Freedom and Unity", landmark:"Mount Kilimanjaro", tree:"African Blackwood" },
+    { name:"Australia", code:"AU", flag:"🇦🇺", lat:-25.3, lng:133.8, capital:"Canberra", continent:"Oceania", population:"26M", language:"English", currency:"Australian Dollar (A$)", animal:"Kangaroo", food:"Meat Pie", flower:"Golden Wattle", sport:"Cricket", motto:"(No official motto)", landmark:"Sydney Opera House", tree:"Eucalyptus" },
+    { name:"New Zealand", code:"NZ", flag:"🇳🇿", lat:-40.9, lng:174.9, capital:"Wellington", continent:"Oceania", population:"5M", language:"English, Māori", currency:"New Zealand Dollar (NZ$)", animal:"Kiwi", food:"Hangi", flower:"Kōwhai", sport:"Rugby", motto:"(No official motto)", landmark:"Milford Sound", tree:"Silver Fern" },
+    { name:"Iceland", code:"IS", flag:"🇮🇸", lat:64.9, lng:-19.0, capital:"Reykjavik", continent:"Europe", population:"370K", language:"Icelandic", currency:"Icelandic Króna (ISK)", animal:"Gyrfalcon", food:"Hákarl", flower:"Mountain Avens", sport:"Handball", motto:"(No official motto)", landmark:"Blue Lagoon", tree:"Birch" },
+    { name:"Ireland", code:"IE", flag:"🇮🇪", lat:53.1, lng:-7.7, capital:"Dublin", continent:"Europe", population:"5M", language:"Irish, English", currency:"Euro (€)", animal:"Irish Hare", food:"Irish Stew", flower:"Shamrock", sport:"Gaelic Football", motto:"Ireland Forever", landmark:"Cliffs of Moher", tree:"Sessile Oak" },
+    { name:"Czech Republic", code:"CZ", flag:"🇨🇿", lat:49.8, lng:15.5, capital:"Prague", continent:"Europe", population:"10.7M", language:"Czech", currency:"Czech Koruna (CZK)", animal:"Double-tailed Lion", food:"Svíčková", flower:"Small-leaved Linden", sport:"Ice Hockey", motto:"Truth Prevails", landmark:"Prague Castle", tree:"Linden" },
+    { name:"Hungary", code:"HU", flag:"🇭🇺", lat:47.2, lng:19.5, capital:"Budapest", continent:"Europe", population:"9.7M", language:"Hungarian", currency:"Hungarian Forint (HUF)", animal:"Turul (Mythical Falcon)", food:"Goulash", flower:"Tulip", sport:"Water Polo", motto:"(No official motto)", landmark:"Hungarian Parliament Building", tree:"Linden" },
+    { name:"Romania", code:"RO", flag:"🇷🇴", lat:45.9, lng:24.9, capital:"Bucharest", continent:"Europe", population:"19M", language:"Romanian", currency:"Romanian Leu (RON)", animal:"Lynx", food:"Sarmale", flower:"Rose", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Bran Castle", tree:"Oak" },
+    { name:"Ukraine", code:"UA", flag:"🇺🇦", lat:48.4, lng:31.2, capital:"Kyiv", continent:"Europe", population:"44M", language:"Ukrainian", currency:"Ukrainian Hryvnia (UAH)", animal:"Common Nightingale", food:"Borscht", flower:"Sunflower", sport:"Football (Soccer)", motto:"Ukraine's Freedom and Statehood", landmark:"Saint Sophia Cathedral", tree:"Willow" },
+    { name:"Pakistan", code:"PK", flag:"🇵🇰", lat:30.4, lng:69.3, capital:"Islamabad", continent:"Asia", population:"220M", language:"Urdu, English", currency:"Pakistani Rupee (PKR)", animal:"Markhor", food:"Biryani", flower:"Jasmine", sport:"Cricket", motto:"Faith, Unity, Discipline", landmark:"Badshahi Mosque", tree:"Deodar Cedar" },
+    { name:"Bangladesh", code:"BD", flag:"🇧🇩", lat:23.7, lng:90.4, capital:"Dhaka", continent:"Asia", population:"165M", language:"Bengali", currency:"Bangladeshi Taka (BDT)", animal:"Bengal Tiger", food:"Hilsa Fish", flower:"Water Lily", sport:"Cricket", motto:"(No official motto)", landmark:"Sundarbans", tree:"Mango" },
+    { name:"Sri Lanka", code:"LK", flag:"🇱🇰", lat:7.9, lng:80.8, capital:"Sri Jayawardenepura Kotte", continent:"Asia", population:"22M", language:"Sinhala, Tamil", currency:"Sri Lankan Rupee (LKR)", animal:"Sri Lankan Elephant", food:"Rice and Curry", flower:"Blue Water Lily", sport:"Cricket", motto:"(No official motto)", landmark:"Sigiriya", tree:"Ironwood" },
+    { name:"Nepal", code:"NP", flag:"🇳🇵", lat:28.4, lng:84.1, capital:"Kathmandu", continent:"Asia", population:"29M", language:"Nepali", currency:"Nepalese Rupee (NPR)", animal:"Cow", food:"Dal Bhat", flower:"Rhododendron", sport:"Football (Soccer)", motto:"Mother and Motherland Are Greater Than Heaven", landmark:"Mount Everest", tree:"Rhododendron" },
+    { name:"Iran", code:"IR", flag:"🇮🇷", lat:32.4, lng:53.7, capital:"Tehran", continent:"Asia", population:"84M", language:"Persian (Farsi)", currency:"Iranian Rial (IRR)", animal:"Asiatic Cheetah", food:"Ghormeh Sabzi", flower:"Red Rose", sport:"Wrestling", motto:"(No official motto)", landmark:"Persepolis", tree:"Plane Tree" },
+    { name:"Iraq", code:"IQ", flag:"🇮🇶", lat:33.2, lng:43.7, capital:"Baghdad", continent:"Asia", population:"40M", language:"Arabic, Kurdish", currency:"Iraqi Dinar (IQD)", animal:"Chukar Partridge", food:"Masgouf", flower:"Rose", sport:"Football (Soccer)", motto:"God is Greatest", landmark:"Ziggurat of Ur", tree:"Date Palm" },
+    { name:"Cuba", code:"CU", flag:"🇨🇺", lat:21.5, lng:-77.8, capital:"Havana", continent:"North America", population:"11M", language:"Spanish", currency:"Cuban Peso (CUP)", animal:"Cuban Trogon", food:"Ropa Vieja", flower:"White Mariposa", sport:"Baseball", motto:"Homeland or Death", landmark:"Old Havana", tree:"Royal Palm" },
+    { name:"Jamaica", code:"JM", flag:"🇯🇲", lat:18.1, lng:-77.3, capital:"Kingston", continent:"North America", population:"3M", language:"English", currency:"Jamaican Dollar (J$)", animal:"Doctor Bird", food:"Ackee and Saltfish", flower:"Lignum Vitae", sport:"Athletics", motto:"Out of Many, One People", landmark:"Blue Mountains", tree:"Blue Mahoe" },
+    { name:"Panama", code:"PA", flag:"🇵🇦", lat:8.5, lng:-80.8, capital:"Panama City", continent:"North America", population:"4.3M", language:"Spanish", currency:"Panamanian Balboa (PAB)", animal:"Harpy Eagle", food:"Sancocho", flower:"Holy Ghost Orchid", sport:"Baseball", motto:"For the Benefit of the World", landmark:"Panama Canal", tree:"Panama Tree" },
+    { name:"Venezuela", code:"VE", flag:"🇻🇪", lat:6.4, lng:-66.6, capital:"Caracas", continent:"South America", population:"28M", language:"Spanish", currency:"Venezuelan Bolívar (VES)", animal:"Troupial", food:"Arepa", flower:"May Orchid", sport:"Baseball", motto:"God and Federation", landmark:"Angel Falls", tree:"Araguaney" },
+    { name:"Ecuador", code:"EC", flag:"🇪🇨", lat:-1.8, lng:-78.2, capital:"Quito", continent:"South America", population:"18M", language:"Spanish", currency:"US Dollar ($)", animal:"Andean Condor", food:"Ceviche", flower:"Rose", sport:"Football (Soccer)", motto:"God, Homeland, Liberty", landmark:"Galápagos Islands", tree:"Cinchona" },
+    { name:"Bolivia", code:"BO", flag:"🇧🇴", lat:-16.3, lng:-63.6, capital:"Sucre / La Paz", continent:"South America", population:"12M", language:"Spanish, Quechua, Aymara", currency:"Bolivian Boliviano (BOB)", animal:"Llama", food:"Salteña", flower:"Cantua", sport:"Football (Soccer)", motto:"Unity is Strength", landmark:"Salar de Uyuni", tree:"Cantua" },
+    { name:"Uruguay", code:"UY", flag:"🇺🇾", lat:-32.5, lng:-55.8, capital:"Montevideo", continent:"South America", population:"3.5M", language:"Spanish", currency:"Uruguayan Peso (UYU)", animal:"Southern Lapwing", food:"Chivito", flower:"Ceibo", sport:"Football (Soccer)", motto:"Freedom or Death", landmark:"Casapueblo", tree:"Ceibo" },
+    { name:"Paraguay", code:"PY", flag:"🇵🇾", lat:-23.4, lng:-58.4, capital:"Asunción", continent:"South America", population:"7M", language:"Spanish, Guarani", currency:"Paraguayan Guarani (PYG)", animal:"Bare-throated Bellbird", food:"Sopa Paraguaya", flower:"Mburucuyá", sport:"Football (Soccer)", motto:"Peace and Justice", landmark:"Iguazu Falls", tree:"Lapacho" },
+    { name:"Algeria", code:"DZ", flag:"🇩🇿", lat:28.0, lng:1.7, capital:"Algiers", continent:"Africa", population:"44M", language:"Arabic, Berber", currency:"Algerian Dinar (DZD)", animal:"Fennec Fox", food:"Couscous", flower:"Iris", sport:"Football (Soccer)", motto:"By the People and for the People", landmark:"Casbah of Algiers", tree:"Cork Oak" },
+    { name:"Tunisia", code:"TN", flag:"🇹🇳", lat:33.9, lng:9.5, capital:"Tunis", continent:"Africa", population:"12M", language:"Arabic", currency:"Tunisian Dinar (TND)", animal:"Cream-colored Courser", food:"Couscous", flower:"Jasmine", sport:"Football (Soccer)", motto:"Order, Liberty, Justice", landmark:"Carthage Ruins", tree:"Olive" },
+    { name:"Libya", code:"LY", flag:"🇱🇾", lat:26.3, lng:17.2, capital:"Tripoli", continent:"Africa", population:"7M", language:"Arabic", currency:"Libyan Dinar (LYD)", animal:"Arabian Horse", food:"Bazeen", flower:"Pomegranate Flower", sport:"Football (Soccer)", motto:"Liberty, Justice, Democracy", landmark:"Leptis Magna", tree:"Date Palm" },
+    { name:"DR Congo", code:"CD", flag:"🇨🇩", lat:-4.0, lng:21.8, capital:"Kinshasa", continent:"Africa", population:"90M", language:"French", currency:"Congolese Franc (CDF)", animal:"Okapi", food:"Fufu", flower:"(No official flower)", sport:"Football (Soccer)", motto:"Justice, Peace, Work", landmark:"Congo River", tree:"(No official tree)" },
+    { name:"Cameroon", code:"CM", flag:"🇨🇲", lat:7.4, lng:12.4, capital:"Yaoundé", continent:"Africa", population:"27M", language:"French, English", currency:"Central African CFA Franc (XAF)", animal:"Lion", food:"Ndolé", flower:"(No official flower)", sport:"Football (Soccer)", motto:"Peace, Work, Fatherland", landmark:"Mount Cameroon", tree:"(No official tree)" },
+    { name:"Ivory Coast", code:"CI", flag:"🇨🇮", lat:7.5, lng:-5.5, capital:"Yamoussoukro", continent:"Africa", population:"26M", language:"French", currency:"West African CFA Franc (XOF)", animal:"Elephant", food:"Attiéké", flower:"(No official flower)", sport:"Football (Soccer)", motto:"Union, Discipline, Work", landmark:"Basilica of Our Lady of Peace", tree:"(No official tree)" },
+    { name:"Senegal", code:"SN", flag:"🇸🇳", lat:14.5, lng:-14.5, capital:"Dakar", continent:"Africa", population:"17M", language:"French", currency:"West African CFA Franc (XOF)", animal:"Lion", food:"Thieboudienne", flower:"Baobab Flower", sport:"Football (Soccer)", motto:"One People, One Goal, One Faith", landmark:"African Renaissance Monument", tree:"Baobab" },
+    { name:"Uganda", code:"UG", flag:"🇺🇬", lat:1.4, lng:32.3, capital:"Kampala", continent:"Africa", population:"46M", language:"English, Swahili", currency:"Ugandan Shilling (UGX)", animal:"Grey Crowned Crane", food:"Matoke", flower:"(No official flower)", sport:"Football (Soccer)", motto:"For God and My Country", landmark:"Bwindi Impenetrable Forest", tree:"(No official tree)" },
+    { name:"Angola", code:"AO", flag:"🇦🇴", lat:-11.2, lng:17.9, capital:"Luanda", continent:"Africa", population:"33M", language:"Portuguese", currency:"Angolan Kwanza (AOA)", animal:"Giant Sable Antelope", food:"Muamba", flower:"Welwitschia", sport:"Handball", motto:"Virtue is Stronger United", landmark:"Tundavala Gap", tree:"Imbondeiro" },
+    { name:"Mozambique", code:"MZ", flag:"🇲🇿", lat:-18.7, lng:35.5, capital:"Maputo", continent:"Africa", population:"31M", language:"Portuguese", currency:"Mozambican Metical (MZN)", animal:"African Elephant", food:"Piri Piri Chicken", flower:"(No official flower)", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Bazaruto Archipelago", tree:"(No official tree)" },
+    { name:"Zimbabwe", code:"ZW", flag:"🇿🇼", lat:-19.0, lng:29.2, capital:"Harare", continent:"Africa", population:"15M", language:"English, Shona, Ndebele", currency:"Zimbabwean Dollar (ZWL)", animal:"Sable Antelope", food:"Sadza", flower:"Flame Lily", sport:"Cricket", motto:"Unity, Freedom, Work", landmark:"Victoria Falls", tree:"Teak" },
+    { name:"Madagascar", code:"MG", flag:"🇲🇬", lat:-18.8, lng:46.9, capital:"Antananarivo", continent:"Africa", population:"28M", language:"Malagasy, French", currency:"Malagasy Ariary (MGA)", animal:"Ring-tailed Lemur", food:"Romazava", flower:"Royal Poinciana", sport:"Rugby", motto:"Love, Fatherland, Progress", landmark:"Avenue of the Baobabs", tree:"Baobab" },
+    { name:"Myanmar", code:"MM", flag:"🇲🇲", lat:21.9, lng:95.9, capital:"Naypyidaw", continent:"Asia", population:"54M", language:"Burmese", currency:"Myanmar Kyat (MMK)", animal:"Green Peafowl", food:"Mohinga", flower:"Padauk", sport:"Chinlone", motto:"(No official motto)", landmark:"Shwedagon Pagoda", tree:"Padauk" },
+    { name:"Cambodia", code:"KH", flag:"🇰🇭", lat:12.6, lng:105.0, capital:"Phnom Penh", continent:"Asia", population:"17M", language:"Khmer", currency:"Cambodian Riel (KHR)", animal:"Kouprey", food:"Fish Amok", flower:"Rumdul", sport:"Pradal Serey", motto:"Nation, Religion, King", landmark:"Angkor Wat", tree:"Sugar Palm" },
+    { name:"Laos", code:"LA", flag:"🇱🇦", lat:19.9, lng:102.5, capital:"Vientiane", continent:"Asia", population:"7.3M", language:"Lao", currency:"Lao Kip (LAK)", animal:"Indian Elephant", food:"Laap", flower:"Champa", sport:"Muay Lao", motto:"Peace, Independence, Democracy, Unity, Prosperity", landmark:"Pha That Luang", tree:"Champa" },
+    { name:"Mongolia", code:"MN", flag:"🇲🇳", lat:46.9, lng:103.8, capital:"Ulaanbaatar", continent:"Asia", population:"3.3M", language:"Mongolian", currency:"Mongolian Tugrik (MNT)", animal:"Przewalski's Horse", food:"Buuz", flower:"Scabiosa", sport:"Wrestling", motto:"(No official motto)", landmark:"Genghis Khan Equestrian Statue", tree:"Siberian Larch" },
+    { name:"Afghanistan", code:"AF", flag:"🇦🇫", lat:33.9, lng:67.7, capital:"Kabul", continent:"Asia", population:"39M", language:"Pashto, Dari", currency:"Afghan Afghani (AFN)", animal:"Snow Leopard", food:"Kabuli Pulao", flower:"Tulip", sport:"Buzkashi", motto:"There is no god but God", landmark:"Bamiyan Buddhas", tree:"Afghan Pine" },
+    { name:"Uzbekistan", code:"UZ", flag:"🇺🇿", lat:41.4, lng:64.6, capital:"Tashkent", continent:"Asia", population:"34M", language:"Uzbek", currency:"Uzbek Som (UZS)", animal:"Markhor", food:"Plov", flower:"Cotton Flower", sport:"Kurash", motto:"(No official motto)", landmark:"Registan Square", tree:"Plane Tree" },
+    { name:"Kazakhstan", code:"KZ", flag:"🇰🇿", lat:48.0, lng:68.0, capital:"Astana", continent:"Asia", population:"19M", language:"Kazakh, Russian", currency:"Kazakhstani Tenge (KZT)", animal:"Snow Leopard", food:"Beshbarmak", flower:"Tulip", sport:"Equestrian Sports", motto:"(No official motto)", landmark:"Bayterek Tower", tree:"Apple" },
+    { name:"Jordan", code:"JO", flag:"🇯🇴", lat:30.6, lng:36.2, capital:"Amman", continent:"Asia", population:"10M", language:"Arabic", currency:"Jordanian Dinar (JOD)", animal:"Arabian Oryx", food:"Mansaf", flower:"Black Iris", sport:"Football (Soccer)", motto:"God, Country, King", landmark:"Petra", tree:"Oak" },
+    { name:"Lebanon", code:"LB", flag:"🇱🇧", lat:33.9, lng:35.8, capital:"Beirut", continent:"Asia", population:"6.8M", language:"Arabic", currency:"Lebanese Pound (LBP)", animal:"Striped Hyena", food:"Kibbeh", flower:"Cyclamen", sport:"Basketball", motto:"(No official motto)", landmark:"Cedars of God", tree:"Cedar" },
+    { name:"Oman", code:"OM", flag:"🇴🇲", lat:21.5, lng:55.9, capital:"Muscat", continent:"Asia", population:"5M", language:"Arabic", currency:"Omani Rial (OMR)", animal:"Arabian Oryx", food:"Shuwa", flower:"(No official flower)", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Sultan Qaboos Grand Mosque", tree:"Frankincense" },
+    { name:"Qatar", code:"QA", flag:"🇶🇦", lat:25.4, lng:51.2, capital:"Doha", continent:"Asia", population:"2.9M", language:"Arabic", currency:"Qatari Riyal (QAR)", animal:"Arabian Oryx", food:"Machboos", flower:"Qataf", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Museum of Islamic Art", tree:"Sidra" },
+    { name:"Kuwait", code:"KW", flag:"🇰🇼", lat:29.3, lng:47.5, capital:"Kuwait City", continent:"Asia", population:"4.3M", language:"Arabic", currency:"Kuwaiti Dinar (KWD)", animal:"Arabian Camel", food:"Machboos", flower:"Arfaj", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Kuwait Towers", tree:"Arfaj" },
+    { name:"Bahrain", code:"BH", flag:"🇧🇭", lat:26.0, lng:50.5, capital:"Manama", continent:"Asia", population:"1.5M", language:"Arabic", currency:"Bahraini Dinar (BHD)", animal:"Oryx", food:"Machboos", flower:"(No official flower)", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Bahrain Fort", tree:"Date Palm" },
+    { name:"Croatia", code:"HR", flag:"🇭🇷", lat:45.1, lng:15.2, capital:"Zagreb", continent:"Europe", population:"4M", language:"Croatian", currency:"Euro (€)", animal:"Pine Marten", food:"Ćevapi", flower:"Iris Croatica", sport:"Football (Soccer)", motto:"(No official motto)", landmark:"Dubrovnik Old Town", tree:"Oak" },
+    { name:"Serbia", code:"RS", flag:"🇷🇸", lat:44.0, lng:21.0, capital:"Belgrade", continent:"Europe", population:"6.8M", language:"Serbian", currency:"Serbian Dinar (RSD)", animal:"White Eagle", food:"Ćevapi", flower:"(No official flower)", sport:"Basketball", motto:"(No official motto)", landmark:"Belgrade Fortress", tree:"Oak" },
+    { name:"Bulgaria", code:"BG", flag:"🇧🇬", lat:42.7, lng:25.5, capital:"Sofia", continent:"Europe", population:"6.9M", language:"Bulgarian", currency:"Bulgarian Lev (BGN)", animal:"Lion", food:"Shopska Salad", flower:"Rose", sport:"Football (Soccer)", motto:"Unity Makes Strength", landmark:"Rila Monastery", tree:"Rose" },
+    { name:"Slovakia", code:"SK", flag:"🇸🇰", lat:48.7, lng:19.7, capital:"Bratislava", continent:"Europe", population:"5.5M", language:"Slovak", currency:"Euro (€)", animal:"Chamois", food:"Bryndzové Halušky", flower:"Linden", sport:"Ice Hockey", motto:"(No official motto)", landmark:"Bratislava Castle", tree:"Linden" },
+    { name:"Slovenia", code:"SI", flag:"🇸🇮", lat:46.2, lng:14.8, capital:"Ljubljana", continent:"Europe", population:"2.1M", language:"Slovenian", currency:"Euro (€)", animal:"Lipizzan Horse", food:"Potica", flower:"Carnation", sport:"Alpine Skiing", motto:"(No official motto)", landmark:"Lake Bled", tree:"Linden" },
+    { name:"Lithuania", code:"LT", flag:"🇱🇹", lat:55.2, lng:23.9, capital:"Vilnius", continent:"Europe", population:"2.8M", language:"Lithuanian", currency:"Euro (€)", animal:"White Stork", food:"Cepelinai", flower:"Rue", sport:"Basketball", motto:"The Nation's Strength Is in Unity", landmark:"Trakai Island Castle", tree:"Oak" },
+    { name:"Latvia", code:"LV", flag:"🇱🇻", lat:56.9, lng:24.1, capital:"Riga", continent:"Europe", population:"1.9M", language:"Latvian", currency:"Euro (€)", animal:"White Wagtail", food:"Grey Peas with Bacon", flower:"Daisy", sport:"Ice Hockey", motto:"For Latvia", landmark:"Riga Old Town", tree:"Linden" },
+    { name:"Estonia", code:"EE", flag:"🇪🇪", lat:58.6, lng:25.0, capital:"Tallinn", continent:"Europe", population:"1.3M", language:"Estonian", currency:"Euro (€)", animal:"Barn Swallow", food:"Black Bread", flower:"Cornflower", sport:"Basketball", motto:"(No official motto)", landmark:"Tallinn Old Town", tree:"Oak" },
+    { name:"Costa Rica", code:"CR", flag:"🇨🇷", lat:9.7, lng:-83.8, capital:"San José", continent:"North America", population:"5.1M", language:"Spanish", currency:"Costa Rican Colón (CRC)", animal:"Yigüirro (Clay-colored Thrush)", food:"Gallo Pinto", flower:"Guaria Morada", sport:"Football (Soccer)", motto:"Long Live Work and Peace", landmark:"Arenal Volcano", tree:"Guanacaste" },
+    { name:"Guatemala", code:"GT", flag:"🇬🇹", lat:15.8, lng:-90.2, capital:"Guatemala City", continent:"North America", population:"18M", language:"Spanish", currency:"Guatemalan Quetzal (GTQ)", animal:"Quetzal", food:"Pepián", flower:"Monja Blanca", sport:"Football (Soccer)", motto:"Grow Free and Fertile", landmark:"Tikal", tree:"Ceiba" },
+    { name:"Honduras", code:"HN", flag:"🇭🇳", lat:15.2, lng:-86.2, capital:"Tegucigalpa", continent:"North America", population:"10M", language:"Spanish", currency:"Honduran Lempira (HNL)", animal:"Scarlet Macaw", food:"Baleada", flower:"Rhyncholaelia Digbyana", sport:"Football (Soccer)", motto:"Free, Sovereign and Independent", landmark:"Copán Ruins", tree:"Honduras Pine" },
+    { name:"El Salvador", code:"SV", flag:"🇸🇻", lat:13.8, lng:-88.9, capital:"San Salvador", continent:"North America", population:"6.5M", language:"Spanish", currency:"US Dollar ($)", animal:"Turquoise-browed Motmot", food:"Pupusa", flower:"Izote", sport:"Football (Soccer)", motto:"God, Union, Liberty", landmark:"Joya de Cerén", tree:"Maquilishuat" },
+    { name:"Dominican Republic", code:"DO", flag:"🇩🇴", lat:18.7, lng:-70.2, capital:"Santo Domingo", continent:"North America", population:"11M", language:"Spanish", currency:"Dominican Peso (DOP)", animal:"Palmchat", food:"La Bandera", flower:"Bayahibe Rose", sport:"Baseball", motto:"God, Fatherland, Liberty", landmark:"Zona Colonial", tree:"West Indian Mahogany" },
+    { name:"Haiti", code:"HT", flag:"🇭🇹", lat:19.0, lng:-72.3, capital:"Port-au-Prince", continent:"North America", population:"11M", language:"French, Haitian Creole", currency:"Haitian Gourde (HTG)", animal:"Hispaniolan Trogon", food:"Griot", flower:"Hibiscus", sport:"Football (Soccer)", motto:"Liberty, Equality, Fraternity", landmark:"Citadelle Laferrière", tree:"Royal Palm" },
+    { name:"Puerto Rico", code:"PR", flag:"🇵🇷", lat:18.2, lng:-66.6, capital:"San Juan", continent:"North America", population:"3.3M", language:"Spanish, English", currency:"US Dollar ($)", animal:"Puerto Rican Spindalis", food:"Mofongo", flower:"Puerto Rican Hibiscus", sport:"Baseball", motto:"John Is His Name", landmark:"El Morro", tree:"Ceiba" },
+    { name:"Trinidad and Tobago", code:"TT", flag:"🇹🇹", lat:10.7, lng:-61.2, capital:"Port of Spain", continent:"North America", population:"1.4M", language:"English", currency:"Trinidad and Tobago Dollar (TTD)", animal:"Scarlet Ibis", food:"Doubles", flower:"Chaconia", sport:"Cricket", motto:"Together We Aspire, Together We Achieve", landmark:"Maracas Beach", tree:"Poui" },
+    { name:"Fiji", code:"FJ", flag:"🇫🇯", lat:-17.7, lng:178.1, capital:"Suva", continent:"Oceania", population:"900K", language:"English, Fijian, Hindi", currency:"Fijian Dollar (FJD)", animal:"Iguana", food:"Kokoda", flower:"Tagimoucia", sport:"Rugby Sevens", motto:"Fear God and Honour the King", landmark:"Bouma Falls", tree:"Coconut Palm" },
+    { name:"Papua New Guinea", code:"PG", flag:"🇵🇬", lat:-6.3, lng:143.9, capital:"Port Moresby", continent:"Oceania", population:"9M", language:"English, Tok Pisin, Hiri Motu", currency:"Papua New Guinean Kina (PGK)", animal:"Raggiana Bird-of-Paradise", food:"Mumu", flower:"Bird of Paradise", sport:"Rugby League", motto:"Unity in Diversity", landmark:"Kokoda Track", tree:"Coconut Palm" }
+];
+
+/* ═══════════════════════════════════════════
+   THREE.JS SCENE SETUP
+   ═══════════════════════════════════════════ */
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.getElementById('globe-container').appendChild(renderer.domElement);
+
+camera.position.set(0, 0, 3.2);
+
+// Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 1.6;
+controls.maxDistance = 8;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.3;
+controls.enablePan = false;
+controls.rotateSpeed = 0.5;
+
+/* ── Lighting ── */
+const ambientLight = new THREE.AmbientLight(0x404060, 0.4);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff5e8, 2.0);
+sunLight.position.set(5, 3, 5);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0x8899cc, 0.3);
+fillLight.position.set(-5, -2, -3);
+scene.add(fillLight);
+
+/* ── Texture Loading ── */
+const textureLoader = new THREE.TextureLoader();
+let texturesLoaded = 0;
+const totalTextures = 5;
+
+function onTextureLoad() {
+    texturesLoaded++;
+    if (texturesLoaded >= totalTextures) {
+        setTimeout(() => {
+            document.getElementById('loading').classList.add('hidden');
+        }, 500);
+    }
+}
+
+function onTextureError() {
+    texturesLoaded++;
+    if (texturesLoaded >= totalTextures) {
+        setTimeout(() => {
+            document.getElementById('loading').classList.add('hidden');
+        }, 500);
+    }
+}
+
+const dayTexture = textureLoader.load(
+    'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg',
+    onTextureLoad, undefined, onTextureError
+);
+const nightTexture = textureLoader.load(
+    'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png',
+    onTextureLoad, undefined, onTextureError
+);
+const normalTexture = textureLoader.load(
+    'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg',
+    onTextureLoad, undefined, onTextureError
+);
+const specularTexture = textureLoader.load(
+    'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg',
+    onTextureLoad, undefined, onTextureError
+);
+const cloudsTexture = textureLoader.load(
+    'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png',
+    onTextureLoad, undefined, onTextureError
+);
+
+/* ── Earth ── */
+const earthGeometry = new THREE.SphereGeometry(1, 128, 128);
+const earthMaterial = new THREE.MeshPhongMaterial({
+    map: dayTexture,
+    specularMap: specularTexture,
+    normalMap: normalTexture,
+    normalScale: new THREE.Vector2(0.85, 0.85),
+    shininess: 25,
+    specular: new THREE.Color(0x333333)
+});
+const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+earth.castShadow = true;
+earth.receiveShadow = true;
+scene.add(earth);
+
+/* ── Clouds ── */
+const cloudsGeometry = new THREE.SphereGeometry(1.007, 64, 64);
+const cloudsMaterial = new THREE.MeshPhongMaterial({
+    map: cloudsTexture,
+    transparent: true,
+    opacity: 0.35,
+    depthWrite: false,
+});
+const clouds = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
+scene.add(clouds);
+
+/* ── Atmosphere ── */
+const atmosphereGeometry = new THREE.SphereGeometry(1.02, 64, 64);
+const atmosphereMaterial = new THREE.ShaderMaterial({
+    vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = (modelViewMatrix * vec4(position,1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+        }
+    `,
+    fragmentShader: `
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+            float intensity = pow(0.65 - dot(vNormal, vec3(0,0,1)), 2.0);
+            vec3 color = vec3(0.3, 0.6, 1.0);
+            gl_FragColor = vec4(color, 1.0) * intensity;
+        }
+    `,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    transparent: true
+});
+const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+scene.add(atmosphere);
+
+/* ── Outer glow ── */
+const glowGeometry = new THREE.SphereGeometry(1.06, 32, 32);
+const glowMaterial = new THREE.ShaderMaterial({
+    vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+        }
+    `,
+    fragmentShader: `
+        varying vec3 vNormal;
+        void main() {
+            float intensity = pow(0.45 - dot(vNormal, vec3(0,0,1)), 3.0);
+            gl_FragColor = vec4(0.15, 0.4, 1.0, 1.0) * intensity * 0.25;
+        }
+    `,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    transparent: true
+});
+scene.add(new THREE.Mesh(glowGeometry, glowMaterial));
+
+/* ── Stars ── */
+const starsGeometry = new THREE.BufferGeometry();
+const starsCount = 12000;
+const starsPositions = new Float32Array(starsCount * 3);
+const starsColors = new Float32Array(starsCount * 3);
+for (let i = 0; i < starsCount; i++) {
+    const i3 = i * 3;
+    starsPositions[i3]     = (Math.random() - 0.5) * 2000;
+    starsPositions[i3 + 1] = (Math.random() - 0.5) * 2000;
+    starsPositions[i3 + 2] = (Math.random() - 0.5) * 2000;
+    const c = new THREE.Color().setHSL(Math.random() * 0.2 + 0.55, 0.3, Math.random() * 0.3 + 0.7);
+    starsColors[i3] = c.r; starsColors[i3+1] = c.g; starsColors[i3+2] = c.b;
+}
+starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsPositions, 3));
+starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starsColors, 3));
+const starsMaterial = new THREE.PointsMaterial({ size: 0.015, vertexColors: true, transparent: true, opacity: 0.8, sizeAttenuation: true });
+scene.add(new THREE.Points(starsGeometry, starsMaterial));
+
+/* ── Location Pin Group ── */
+const pinGroup = new THREE.Group();
+scene.add(pinGroup);
+
+function createPin(lat, lng) {
+    // Remove old pins
+    while(pinGroup.children.length) pinGroup.remove(pinGroup.children[0]);
+
+    const phi   = (90 - lat) * (Math.PI / 180);
+    const theta = (lng + 180) * (Math.PI / 180);
+    const r = 1.01;
+    const x = -(r * Math.sin(phi) * Math.cos(theta));
+    const y =  r * Math.cos(phi);
+    const z =  r * Math.sin(phi) * Math.sin(theta);
+
+    // Pin stem
+    const stemGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.08, 8);
+    const stemMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const stem = new THREE.Mesh(stemGeo, stemMat);
+
+    // Pin head
+    const headGeo = new THREE.SphereGeometry(0.015, 16, 16);
+    const headMat = new THREE.MeshBasicMaterial({ color: 0xff4444 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 0.05;
+
+    // Glow ring
+    const ringGeo = new THREE.RingGeometry(0.02, 0.035, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.y = 0.001;
+    ring.rotation.x = -Math.PI / 2;
+
+    const group = new THREE.Group();
+    group.add(stem); group.add(head); group.add(ring);
+    group.position.set(x, y, z);
+    group.lookAt(0, 0, 0);
+    group.rotateX(Math.PI / 2);
+
+    pinGroup.add(group);
+    return group;
+}
+
+/* ═══════════════════════════════════════════
+   RAYCASTING & COUNTRY LOOKUP
+   ═══════════════════════════════════════════ */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let isDragging = false;
+let mouseDownPos = { x: 0, y: 0 };
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+    isDragging = false;
+    mouseDownPos = { x: e.clientX, y: e.clientY };
+});
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+    const dx = e.clientX - mouseDownPos.x;
+    const dy = e.clientY - mouseDownPos.y;
+    if (Math.sqrt(dx*dx + dy*dy) > 5) isDragging = true;
+});
+
+renderer.domElement.addEventListener('pointerup', (e) => {
+    if (isDragging) return;
+
+    mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const hits = raycaster.intersectObject(earth);
+    if (hits.length > 0) {
+        const point = hits[0].point;
+
+        // Convert to lat/lng
+        const lat = 90 - Math.acos(point.y) * (180 / Math.PI);
+        const lng = -(Math.atan2(point.z, -point.x) * (180 / Math.PI) - 180);
+        const lngN = ((lng + 540) % 360) - 180;
+
+        // Adjust for earth rotation
+        const rotY = earth.rotation.y;
+        const adjustedLng = ((lngN - rotY * (180/Math.PI)) + 540) % 360 - 180;
+
+        // Find nearest country
+        const country = findNearestCountry(lat, adjustedLng);
+
+        if (country) {
+            // Show markers
+            const marker = document.getElementById('clickMarker');
+            const ring = document.getElementById('clickMarkerRing');
+            marker.style.left = e.clientX + 'px';
+            marker.style.top  = e.clientY + 'px';
+            ring.style.left   = e.clientX + 'px';
+            ring.style.top    = e.clientY + 'px';
+            marker.classList.add('active');
+            ring.classList.add('active');
+
+            // Place 3D pin
+            const pinPhi   = (90 - country.lat) * (Math.PI / 180);
+            const pinTheta = (country.lng + 180) * (Math.PI / 180);
+            // Account for rotation
+            createPin(country.lat, country.lng + earth.rotation.y * (180/Math.PI));
+
+            showCountryInfo(country, lat.toFixed(2), adjustedLng.toFixed(2));
+            document.getElementById('promptTooltip').style.opacity = '0';
+
+            setTimeout(() => {
+                marker.classList.remove('active');
+                ring.classList.remove('active');
+            }, 3000);
+        }
+    }
+});
+
+function findNearestCountry(lat, lng) {
+    let nearest = null;
+    let minDist = Infinity;
+
+    for (const c of countries) {
+        const dLat = lat - c.lat;
+        const dLng = lng - c.lng;
+        const dist = Math.sqrt(dLat*dLat + dLng*dLng);
+        if (dist < minDist) {
+            minDist = dist;
+            nearest = c;
+        }
+    }
+    // Max radius check — ~25 degrees
+    return minDist < 25 ? nearest : null;
+}
+
+/* ═══════════════════════════════════════════
+   INFO PANEL
+   ═══════════════════════════════════════════ */
+function showCountryInfo(c, lat, lng) {
+    document.getElementById('panelFlag').textContent = c.flag;
+    document.getElementById('panelCountry').textContent = c.name;
+    document.getElementById('panelSubtitle').textContent = `${c.capital} · ${c.continent}`;
+    document.getElementById('panelCoords').innerHTML = `📍 ${lat}°, ${lng}°`;
+
+    const body = document.getElementById('panelBody');
+    body.innerHTML = `
+        <div class="info-section">
+            <div class="info-section-title">General Info</div>
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-card-icon">🏛️</div>
+                    <div class="info-card-label">Capital</div>
+                    <div class="info-card-value">${c.capital}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">👥</div>
+                    <div class="info-card-label">Population</div>
+                    <div class="info-card-value">${c.population}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">🗣️</div>
+                    <div class="info-card-label">Language</div>
+                    <div class="info-card-value">${c.language}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">💰</div>
+                    <div class="info-card-label">Currency</div>
+                    <div class="info-card-value">${c.currency}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-section-title">National Symbols</div>
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-card-icon">🐾</div>
+                    <div class="info-card-label">National Animal</div>
+                    <div class="info-card-value">${c.animal}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">🍽️</div>
+                    <div class="info-card-label">National Food</div>
+                    <div class="info-card-value">${c.food}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">🌸</div>
+                    <div class="info-card-label">National Flower</div>
+                    <div class="info-card-value">${c.flower}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">🌳</div>
+                    <div class="info-card-label">National Tree</div>
+                    <div class="info-card-value">${c.tree}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">⚽</div>
+                    <div class="info-card-label">National Sport</div>
+                    <div class="info-card-value">${c.sport}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">🏛️</div>
+                    <div class="info-card-label">Famous Landmark</div>
+                    <div class="info-card-value">${c.landmark}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-section-title">Motto</div>
+            <div class="info-grid">
+                <div class="info-card full-width">
+                    <div class="info-card-icon">📜</div>
+                    <div class="info-card-label">National Motto</div>
+                    <div class="info-card-value">${c.motto}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('infoPanel').classList.add('open');
+}
+
+// Close panel
+document.getElementById('panelClose').addEventListener('click', () => {
+    document.getElementById('infoPanel').classList.remove('open');
+    while(pinGroup.children.length) pinGroup.remove(pinGroup.children[0]);
+});
+
+/* ═══════════════════════════════════════════
+   SEARCH
+   ═══════════════════════════════════════════ */
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    searchResults.innerHTML = '';
+    if (q.length < 1) { searchResults.classList.remove('visible'); return; }
+
+    const matches = countries.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        c.capital.toLowerCase().includes(q) ||
+        c.code.toLowerCase() === q
+    ).slice(0, 8);
+
+    if (matches.length === 0) { searchResults.classList.remove('visible'); return; }
+
+    matches.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.innerHTML = `<span class="sr-flag">${c.flag}</span><span class="sr-name">${c.name}</span>`;
+        item.addEventListener('click', () => {
+            // Rotate globe to country
+            rotateToCountry(c);
+            showCountryInfo(c, c.lat.toFixed(2), c.lng.toFixed(2));
+            createPin(c.lat, c.lng + earth.rotation.y * (180/Math.PI));
+            searchInput.value = '';
+            searchResults.classList.remove('visible');
+            document.getElementById('promptTooltip').style.opacity = '0';
+        });
+        searchResults.appendChild(item);
+    });
+    searchResults.classList.add('visible');
+});
+
+searchInput.addEventListener('blur', () => {
+    setTimeout(() => searchResults.classList.remove('visible'), 200);
+});
+
+searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim().length > 0) {
+        searchInput.dispatchEvent(new Event('input'));
+    }
+});
+
+/* ── Rotate to Country ── */
+function rotateToCountry(c) {
+    const phi = (90 - c.lat) * (Math.PI / 180);
+    const theta = (c.lng + 180) * (Math.PI / 180);
+    const r = 2.8;
+    const targetX = -(r * Math.sin(phi) * Math.cos(theta));
+    const targetY =  r * Math.cos(phi);
+    const targetZ =  r * Math.sin(phi) * Math.sin(theta);
+
+    // Temporarily disable auto rotate
+    controls.autoRotate = false;
+
+    const startPos = camera.position.clone();
+    const endPos = new THREE.Vector3(targetX, targetY, targetZ);
+    let t = 0;
+
+    function animateRotation() {
+        t += 0.02;
+        if (t >= 1) {
+            camera.position.copy(endPos);
+            camera.lookAt(0, 0, 0);
+            controls.update();
+            setTimeout(() => { controls.autoRotate = true; }, 3000);
+            return;
+        }
+        const eased = 1 - Math.pow(1 - t, 3);
+        camera.position.lerpVectors(startPos, endPos, eased);
+        camera.lookAt(0, 0, 0);
+        controls.update();
+        requestAnimationFrame(animateRotation);
+    }
+    animateRotation();
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATION LOOP
+   ═══════════════════════════════════════════ */
+let time = 0;
+
+function animate() {
+    requestAnimationFrame(animate);
+    time += 0.01;
+
+    earth.rotation.y += 0.002;
+    clouds.rotation.y += 0.003;
+    clouds.rotation.x = Math.sin(time * 0.1) * 0.01;
+
+    // Pin group follows earth rotation
+    pinGroup.rotation.y = earth.rotation.y;
+
+    starsMaterial.opacity = 0.6 + Math.sin(time * 1.5) * 0.15;
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+/* ── Resize ── */
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ── Keyboard ── */
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        controls.autoRotate = !controls.autoRotate;
+    }
+    if (e.code === 'Escape') {
+        document.getElementById('infoPanel').classList.remove('open');
+        while(pinGroup.children.length) pinGroup.remove(pinGroup.children[0]);
+    }
+});
+
+animate();
+</script>
+</body>
+</html>
