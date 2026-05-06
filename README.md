@@ -1,3 +1,4 @@
+
 # 🌍 Earth Explorer
 
 An interactive 3D globe experience built with **Three.js**, where users can rotate the Earth, search countries, click on the globe, and explore country information in a sleek modern UI.
