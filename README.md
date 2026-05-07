@@ -81,9 +81,6 @@ Each country entry may include:
 - Add dark/light theme toggle.
 - Add quiz mode or educational mini-games.
 
-<div align="center">
-
-[![Explore Now](https://img.shields.io/badge/🚀%20Play%20Now-4285F4?style=for-the-badge&logo=vercel&logoColor=white)](https://3dearth-nine.vercel.app/)
 
 ## 👨‍💻 Author
 
@@ -94,3 +91,7 @@ Made with ❤ as an interactive world exploration project.
 ## 📜 License
 
 This project is open for personal and educational use.
+
+<div align="center">
+
+[![Explore Now](https://img.shields.io/badge/🚀%20Play%20Now-4285F4?style=for-the-badge&logo=vercel&logoColor=white)](https://3dearth-nine.vercel.app/)
