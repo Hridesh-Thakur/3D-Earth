@@ -15,7 +15,7 @@ An interactive 3D globe experience built with **Three.js**, where users can rota
 - Loading screen, atmosphere glow, clouds, stars, and smooth camera transitions for a polished experience.
 - Keyboard shortcuts for better interaction.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - HTML5
 - CSS3
