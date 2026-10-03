@@ -23,7 +23,7 @@ An interactive 3D globe experience built with **Three.js**, where users can rota
 - Three.js
 - OrbitControls from Three.js examples
 
-## 🎮 Controls
+## Controls
 
 - **Drag** — Rotate the globe.
 - **Scroll** — Zoom in and out.
