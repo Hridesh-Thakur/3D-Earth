@@ -48,7 +48,7 @@ The full project is currently contained in a single HTML file with embedded styl
 2. Open the file in a modern browser like Chrome, Edge, or Firefox.
 3. Make sure you have an internet connection because the project loads Three.js modules, Google Fonts, and Earth textures from CDN/external sources.
 
-## 📸 Highlights
+## Highlights
 
 This project includes a realistic Earth setup with day texture, normal map, specular map, cloud layer, atmosphere shader, glow effect, and a dynamic star field background.
 
