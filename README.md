@@ -82,7 +82,7 @@ Each country entry may include:
 - Add quiz mode or educational mini-games.
 
 
-## 👨‍💻 Author
+## Author
 
 **Hridesh Thakur**
 
