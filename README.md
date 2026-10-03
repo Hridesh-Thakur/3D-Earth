@@ -73,7 +73,7 @@ Each country entry may include:
 - Famous landmark
 - National motto
 
-## 💡 Future Improvements
+## Future Improvements
 
 - Add more countries and richer datasets.
 - Add mobile interaction improvements and touch optimization.
