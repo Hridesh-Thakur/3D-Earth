@@ -32,7 +32,7 @@ An interactive 3D globe experience built with **Three.js**, where users can rota
 - **Spacebar** — Toggle auto-rotation.
 - **Escape** — Close the info panel.
 
-## 📂 Project Structure
+## Project Structure
 
 ```bash
 Earth-Explorer/
