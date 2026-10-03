@@ -42,7 +42,7 @@ Earth-Explorer/
 
 The full project is currently contained in a single HTML file with embedded styles and scripts.
 
-## 🚀 How to Run
+## How to Run
 
 1. Download or copy the project code into an `index.html` file.
 2. Open the file in a modern browser like Chrome, Edge, or Firefox.
