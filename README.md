@@ -54,7 +54,7 @@ This project includes a realistic Earth setup with day texture, normal map, spec
 
 It also provides an elegant country exploration interface with a floating search bar, animated click markers, and a detailed side panel for information display.
 
-## 🌐 Country Info Included
+## Country Info Included
 
 Each country entry may include:
 
