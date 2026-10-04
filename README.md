@@ -11,7 +11,7 @@ An interactive 3D globe experience built with **Three.js**, where users can rota
 -  Click anywhere on the globe to detect and explore the nearest country.
 -  Animated country pin marker with visual click feedback.
 -  Beautiful glassmorphism-style info panel showing country details.
-- Country database includes details like capital, population, language, currency, national animal, food, flower, tree, sport, motto, and landmark.
+-  Country database includes details like capital, population, language, currency, national animal, food, flower, tree, sport, motto, and landmark.
 - Loading screen, atmosphere glow, clouds, stars, and smooth camera transitions for a polished experience.
 - Keyboard shortcuts for better interaction.
  
