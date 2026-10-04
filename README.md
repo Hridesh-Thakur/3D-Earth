@@ -83,7 +83,7 @@ Each country entry may include:
 
 ## Author
 
-**Hridesh Thakur**
+**Hridesh Thakur** 
 
 Made with ❤ as an interactive world exploration project.
 
