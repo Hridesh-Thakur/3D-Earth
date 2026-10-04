@@ -28,7 +28,7 @@ An interactive 3D globe experience built with **Three.js**, where users can rota
 -  **Scroll** — Zoom in and out.
 -  **Click on globe** — Explore the nearest country.
 -  **Search bar** — Find a country instantly.
-- **Spacebar** — Toggle auto-rotation.
+-  **Spacebar** — Toggle auto-rotation.
 - **Escape** — Close the info panel.
 
 ## Project Structure
