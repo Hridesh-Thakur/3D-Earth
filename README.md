@@ -7,7 +7,7 @@ An interactive 3D globe experience built with **Three.js**, where users can rota
 
 -  Interactive 3D Earth rendered with WebGL using Three.js.
 -  Smooth globe rotation with OrbitControls support.
-- Search countries by name, capital, or country code.
+-  Search countries by name, capital, or country code.
 - Click anywhere on the globe to detect and explore the nearest country.
 - Animated country pin marker with visual click feedback.
 - Beautiful glassmorphism-style info panel showing country details.
