@@ -19,7 +19,7 @@ An interactive 3D globe experience built with **Three.js**, where users can rota
 
 -   HTML5
 -   CSS3
--  JavaScript (ES Modules)
+-   JavaScript (ES Modules)
 -  OrbitControls from Three.js examples
 
 ## Controls
