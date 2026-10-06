@@ -57,7 +57,7 @@ It also provides an elegant country exploration interface with a floating search
 Each country entry may include:
 
 -  Flag
-- Country name
+-  Country name
 - Capital
 - Continent
 - Population
