@@ -59,7 +59,7 @@ Each country entry may include:
 -  Flag
 -  Country name
 -  Capital
-- Continent
+-  Continent
 - Population
 - Language
 - Currency
