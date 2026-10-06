@@ -63,7 +63,7 @@ Each country entry may include:
 -  Population
 -  Language
 -  Currency
-- National animal
+-  National animal
 - National food
 - National flower
 - National tree
