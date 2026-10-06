@@ -68,7 +68,7 @@ Each country entry may include:
 -  National flower
 -  National tree
 -  National sport
-- Famous landmark
+-  Famous landmark
 - National motto
 
 ## Future Improvements
