@@ -87,7 +87,6 @@ Each country entry may include:
 Made with ❤ as an interactive world exploration project.
 
 ## License
-
 This project is open for personal and educational use.
 
 <div align="center">
