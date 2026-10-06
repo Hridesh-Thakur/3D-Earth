@@ -62,7 +62,7 @@ Each country entry may include:
 -  Continent
 -  Population
 -  Language
-- Currency
+-  Currency
 - National animal
 - National food
 - National flower
