@@ -69,7 +69,7 @@ Each country entry may include:
 -  National tree
 -  National sport
 -  Famous landmark
-- National motto
+-  National motto
 
 ## Future Improvements
 
