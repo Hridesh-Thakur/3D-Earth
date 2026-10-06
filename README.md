@@ -65,7 +65,7 @@ Each country entry may include:
 -  Currency
 -  National animal
 -  National food
-- National flower
+-  National flower
 - National tree
 - National sport
 - Famous landmark
