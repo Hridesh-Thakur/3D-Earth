@@ -61,7 +61,7 @@ Each country entry may include:
 -  Capital
 -  Continent
 -  Population
-- Language
+-  Language
 - Currency
 - National animal
 - National food
