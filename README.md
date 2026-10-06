@@ -60,7 +60,7 @@ Each country entry may include:
 -  Country name
 -  Capital
 -  Continent
-- Population
+-  Population
 - Language
 - Currency
 - National animal
