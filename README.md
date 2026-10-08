@@ -90,5 +90,4 @@ Made with ❤ as an interactive world exploration project.
 This project is open for personal and educational use.
 
 <div align="center">
- 
 [![Explore Now](https://img.shields.io/badge/🚀%20Play%20Now-4285F4?style=for-the-badge&logo=vercel&logoColor=white)](https://3dearth-nine.vercel.app/)
